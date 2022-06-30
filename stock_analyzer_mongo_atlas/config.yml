@@ -1,0 +1,12 @@
+default:
+    host:       "cluster0.dthb3.mongodb.net"
+    username:   "test"
+    password:   "vMSkI83koucTJhql"
+    database:   "stock_analyzer"
+    collection: "user_base"
+production:
+    host:       "cluster0.dthb3.mongodb.net"
+    username:   "test"
+    password:   "vMSkI83koucTJhql"
+    database:   "stock_analyzer"
+    collection: "user_base"
