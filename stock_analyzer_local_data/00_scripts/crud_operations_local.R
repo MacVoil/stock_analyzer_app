@@ -1,6 +1,6 @@
 read_user_base <-
 function() {
-    user_base_tbl <<- read_rds(file = "00_data_local/user_base_tbl.rds")
+    user_base_tbl <<- read_rds("00_data_local/user_base_tbl.rds")
 }
 update_and_write_user_base <-
 function(user_name, column_name, assign_input) {
