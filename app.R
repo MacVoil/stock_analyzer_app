@@ -4,6 +4,11 @@ library(shinythemes)
 library(shinyWidgets)
 library(tidyverse)
 
+theme <- "paper"
+button_theme_search <- "primary"
+botton_theme_tags <- "primary"
+botton_theme_cards <- "primary"
+
 # APP CATALOG (META DATA) ----
 app1 <- list(
     title = "Stock Analyzer",
@@ -95,7 +100,7 @@ make_cards <- function(data){
             p(data$description),
             a(
               type = "button",
-              class = "btn btn-primary",
+              class = str_glue("btn btn-{botton_theme_cards}"),
               target = "_blank",
               href = str_c("/", data$sub_directory),
               "open"
@@ -125,11 +130,11 @@ ui <- fluidPage(
             " Apps by Business Science"
         ),
         collapsible = TRUE,
-        theme = shinytheme("paper"),
+        theme = shinytheme(theme),
         inputs = div(
             textInput(inputId = "search_box", label = NULL, placeholder = "Search", width = 200),
-            actionButton(inputId = "seach_button", label = "Submit"),
-            actionButton(inputId = "clear_button", label = "Clear")
+            actionButton(inputId = "search_button", label = "Submit", class = str_glue("btn-{button_theme_search}")),
+            actionButton(inputId = "clear_button", label = "Clear", class = str_glue("btn-{button_theme_search}"))
         ),
         
         tabPanel(
@@ -139,9 +144,15 @@ ui <- fluidPage(
                 id = "tag-filters",
                 radioGroupButtons(
                     inputId = "input_tags",
-                    choices = c("All", "AWS", "SHINY", "MONGODB"), 
+                    choices = c("All", app_catalog_tbl %>% 
+                                  select(tags) %>% 
+                                  unnest(tags) %>% 
+                                  pull(tag) %>% 
+                                  unique() %>% 
+                                  sort()) %>% 
+                      str_to_upper(), 
                     justified = TRUE, 
-                    status = "default" 
+                    status = botton_theme_tags
                 )
             ),
             div(
@@ -155,6 +166,65 @@ ui <- fluidPage(
 
 # SERVER ----
 server <- function(session, input, output) {
+  reactive_values <-  reactiveValues(data = app_catalog_tbl)
+  
+  # Search Bar ----
+  
+  observeEvent(eventExpr = input$search_button, {
+    
+    search_string <- str_to_lower(input$search_box)
+    
+    reactive_values$data <- app_catalog_tbl %>% 
+      filter(
+        str_to_lower(title) %>% 
+          str_detect(search_string) |
+        str_to_lower(subtitle) %>% 
+          str_detect(search_string) |
+        str_to_lower(description) %>% 
+          str_detect(search_string)
+      )
+  })
+  
+  # Clear
+  
+  observeEvent(eventExpr = input$clear_button, {
+    
+    updateTextInput(session = session, 
+                    inputId = "search_box", 
+                    placeholder = "Search", 
+                    value = "")
+    
+    reactive_values$data <- app_catalog_tbl
+    
+    updateRadioGroupButtons(session = session,
+                            inputId = "input_tags",
+                            selected = "ALL")
+    
+  })
+  
+  # Tags ----
+  
+  observeEvent(input$input_tags, {
+    
+    tag_selected <- input$input_tags %>% 
+      str_to_lower()
+    
+    if(tag_selected == "all"){
+      reactive_values$data <- app_catalog_tbl
+    } else {
+      ids_selected <- app_catalog_tbl %>% 
+        unnest(tags) %>% 
+        filter(str_to_lower(tag) == tag_selected) %>% 
+        pull(id)
+      
+      reactive_values$data <- app_catalog_tbl %>% 
+        filter(id %in% ids_selected)
+      
+    }
+    
+  })
+  
+  # Render Cads ----
   
   output$output_cards <- renderUI({
     div(
@@ -162,7 +232,7 @@ server <- function(session, input, output) {
       div(
         class = "row",
         style = "display:-webkit-flex; flex-wrap:wrap;",
-        app_catalog_tbl %>% 
+        reactive_values$data %>% 
           make_cards()
       )
     )
