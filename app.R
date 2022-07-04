@@ -54,6 +54,59 @@ navbar_page_with_inputs <- function(..., inputs) {
     navbar
 }
 
+make_tags <- function(data){
+  data %>% 
+    mutate(tag = as_factor(tag)) %>% 
+    group_by(tag) %>% 
+    group_split() %>% 
+    map(.f = function(data){
+      span(class = str_glue("label label-{data$color}"), data$tag) %>% 
+        tagList()
+    })
+}
+
+make_cards <- function(data){
+  data %>% 
+    mutate(id = as_factor(id)) %>% 
+    group_by(id) %>% 
+    group_split() %>% 
+    map(.f = function(data){
+      div(
+        class = "col-sm-4",
+        style = "display:flex;",
+        div(
+          class = "panel panel-default",
+          div(
+            class = "panel-heading",
+            data %>% pluck("tags", 1) %>% 
+              make_tags()
+          ),
+          div(
+            class = "panel-body",
+            style = "padding:20px;",
+            tags$img(
+              class = "img  img-thumbnail",
+              src = str_glue("images/{data$img}")
+            ),
+            br(), br(),
+            h4(data$title, br(), 
+              if(!is.na(data$subtitle)) tags$small(data$subtitle)
+            ),
+            p(data$description),
+            a(
+              type = "button",
+              class = "btn btn-primary",
+              target = "_blank",
+              href = str_c("/", data$sub_directory),
+              "open"
+            )
+          )
+        )
+      )
+    }) %>% 
+    tagList()
+}
+
 # UI ----
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -108,35 +161,9 @@ server <- function(session, input, output) {
       class = "container",
       div(
         class = "row",
-        div(
-          class = "col-sm-4",
-          style = "display:flex;",
-          div(
-            class = "panel panel-default",
-            div(
-              class = "panel-heading",
-              span(class = "label label-info", "AWS")
-            ),
-            div(
-              class = "panel-body",
-              style = "padding:20px;",
-              tags$img(
-                class = "img  img-thumbnail",
-                src = "images/stock_analyzer.jpg"
-              ),
-              br(), br(),
-              h4("Stock Analyzer", br(), tags$small("MongoDB Atlas")),
-              p(app_catalog_tbl$description[[1]]),
-              a(
-                type = "button",
-                class = "btn btn-primary",
-                target = "_blank",
-                href = str_c("/", app_catalog_tbl$sub_directory[[1]]),
-                "open"
-              )
-            )
-          )
-        )
+        style = "display:-webkit-flex; flex-wrap:wrap;",
+        app_catalog_tbl %>% 
+          make_cards()
       )
     )
   })
