@@ -156,7 +156,7 @@ ui <- fluidPage(
                 )
             ),
             div(
-                class = "container",
+                class = "",
                 id = "app-library",
                 uiOutput(outputId = "output_cards")
             )
