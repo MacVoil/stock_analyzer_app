@@ -71,6 +71,9 @@ make_tags <- function(data){
 }
 
 make_cards <- function(data){
+  
+  if(nrow(data) == 0) return("")
+  
   data %>% 
     mutate(id = as_factor(id)) %>% 
     group_by(id) %>% 
